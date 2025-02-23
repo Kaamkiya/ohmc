@@ -70,7 +70,9 @@ void set_status_message(const char *fmt, ...);
 
 /** terminal **/
 
-void die(const char *s) {
+void
+die(const char *s)
+{
 	write(STDOUT_FILENO, "\x1b[2J", 4);
 	write(STDOUT_FILENO, "\x1b[H", 3);
 
@@ -78,11 +80,15 @@ void die(const char *s) {
 	exit(1);
 }
 
-void disable_raw_mode() {
+void
+disable_raw_mode()
+{
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &S.orig_termios) == -1) die("tcsetattr");
 }
 
-void enable_raw_mode() {
+void
+enable_raw_mode()
+{
 	if (tcgetattr(STDIN_FILENO, &S.orig_termios) == -1) die("tcgetattr");
 	atexit(disable_raw_mode);
 
@@ -97,7 +103,9 @@ void enable_raw_mode() {
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) die("tcsetattr");
 }
 
-int read_key() {
+int
+read_key()
+{
 	int nread;
 	char c;
 	while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
@@ -146,7 +154,9 @@ int read_key() {
 	return c;
 }
 
-int get_cursor_position(int *rows, int *cols) {
+int
+get_cursor_position(int *rows, int *cols)
+{
 	char buf[32];
 	unsigned int i = 0;
 
@@ -165,7 +175,9 @@ int get_cursor_position(int *rows, int *cols) {
 	return 0;
 }
 
-int get_window_size(int *rows, int *cols) {
+int
+get_window_size(int *rows, int *cols)
+{
 	struct winsize ws;
 
 	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
@@ -180,7 +192,9 @@ int get_window_size(int *rows, int *cols) {
 
 /** row operations **/
 
-int row_cx_to_rx(erow *row, int cx) {
+int
+row_cx_to_rx(erow *row, int cx)
+{
 	int rx = 0;
 	int j;
 	for (j = 0; j < cx; j++) {
@@ -191,7 +205,9 @@ int row_cx_to_rx(erow *row, int cx) {
 	return rx;
 }
 
-void update_row(erow *row) {
+void
+update_row(erow *row)
+{
 	int tabs = 0;
 	int j;
 	for (j = 0; j < row->size; j++)
@@ -211,7 +227,9 @@ void update_row(erow *row) {
 	row->rsize = idx;
 }
 
-void insert_row(int at, char *s, size_t len) {
+void
+insert_row(int at, char *s, size_t len)
+{
 	if (at < 0 || at > S.numrows) return;
 
 	S.row = realloc(S.row, sizeof(erow) * (S.numrows + 1));
@@ -230,12 +248,16 @@ void insert_row(int at, char *s, size_t len) {
 	S.dirty++;
 }
 
-void free_row(erow *row) {
+void
+free_row(erow *row)
+{
 	free(row->render);
 	free(row->chars);
 }
 
-void del_row(int at) {
+void
+del_row(int at)
+{
 	if (at < 0 || at >= S.numrows) return;
 	free_row(&S.row[at]);
 	memmove(&S.row[at], &S.row[at+1], sizeof(erow) * (S.numrows - at - 1));
@@ -243,7 +265,9 @@ void del_row(int at) {
 	S.dirty++;
 }
 
-void row_insert_char(erow *row, int at, int c) {
+void
+row_insert_char(erow *row, int at, int c)
+{
 	if (at < 0 || at > row->size) at = row->size;
 	row->chars = realloc(row->chars, row->size + 2);
 	memmove(&row->chars[at+1], &row->chars[at], row->size - at + 1);
@@ -253,7 +277,9 @@ void row_insert_char(erow *row, int at, int c) {
 	S.dirty++;
 }
 
-void row_append_string(erow *row, char *s, size_t len) {
+void
+row_append_string(erow *row, char *s, size_t len)
+{
 	row->chars = realloc(row->chars, row->size + len + 1);
 	memcpy(&row->chars[row->size], s, len);
 	row->size += len;
@@ -262,7 +288,9 @@ void row_append_string(erow *row, char *s, size_t len) {
 	S.dirty++;
 }
 
-void row_del_char(erow *row, int at) {
+void
+row_del_char(erow *row, int at)
+{
 	if (at < 0 || at > row->size) return;
 	memmove(&row->chars[at], &row->chars[at+1], row->size - at);
 	row->size--;
@@ -272,7 +300,9 @@ void row_del_char(erow *row, int at) {
 
 /** editor operations **/
 
-void insert_char(int c) {
+void
+insert_char(int c)
+{
 	if (S.cy == S.numrows) {
 		insert_row(S.numrows, "", 0);
 	}
@@ -280,7 +310,9 @@ void insert_char(int c) {
 	S.cx++;
 }
 
-void insert_newline() {
+void
+insert_newline()
+{
 	if (S.cx == 0) {
 		insert_row(S.cy, "", 0);
 	} else {
@@ -295,7 +327,9 @@ void insert_newline() {
 	S.cx = 0;
 }
 
-void del_char() {
+void
+del_char()
+{
 	if (S.cy == S.numrows) return;
 	if (S.cx == 0 && S.cy == 0) return;
 
@@ -313,7 +347,9 @@ void del_char() {
 
 /** file io **/
 
-char *rows_to_string(int *buflen) {
+char
+*rows_to_string(int *buflen)
+{
 	int totlen = 0;
 	for (int j = 0; j < S.numrows; j++) {
 		totlen += S.row[j].size + 1;
@@ -332,7 +368,9 @@ char *rows_to_string(int *buflen) {
 	return buf;
 }
 
-void editor_open(char *filename) {
+void
+editor_open(char *filename)
+{
 	free(S.filename);
 	S.filename = strdup(filename);
 
@@ -354,7 +392,9 @@ void editor_open(char *filename) {
 	S.dirty = 0;
 }
 
-void save() {
+void
+save()
+{
 	if (S.filename == NULL) return;
 
 	int len;
@@ -388,7 +428,9 @@ struct abuf {
 
 #define ABUF_INIT {NULL, 0}
 
-void ab_append(struct abuf *ab, const char *s, int len) {
+void
+ab_append(struct abuf *ab, const char *s, int len)
+{
 	char *new = realloc(ab->b, ab->len + len);
 
 	if (new == NULL) return;
@@ -398,13 +440,17 @@ void ab_append(struct abuf *ab, const char *s, int len) {
 	ab->len += len;
 }
 
-void ab_free(struct abuf *ab) {
+void
+ab_free(struct abuf *ab)
+{
 	free(ab->b);
 }
 
 /** input **/
 
-void move_cursor(int key) {
+void
+move_cursor(int key)
+{
 	erow *row = (S.cy >= S.numrows) ? NULL : &S.row[S.cy];
 
 	switch (key) {
@@ -441,7 +487,9 @@ void move_cursor(int key) {
 	if (S.cx > rowlen) S.cx = rowlen;
 }
 
-void process_keypress() {
+void
+process_keypress()
+{
 	static int quit_times = OHMC_QUIT_TIMES;
 	int c = read_key();
 
@@ -509,7 +557,9 @@ void process_keypress() {
 
 /** output **/
 
-void scroll() {
+void
+scroll()
+{
 	S.rx = 0;
 	if (S.cy < S.numrows) {
 		S.rx = row_cx_to_rx(&S.row[S.cy], S.cx);
@@ -530,7 +580,9 @@ void scroll() {
 	}
 }
 
-void draw_rows(struct abuf *ab) {
+void
+draw_rows(struct abuf *ab)
+{
 	for (int y = 0; y < S.rows; y++) {
 		int filerow = y + S.rowoff;
 		if (filerow >= S.numrows) {
@@ -563,7 +615,9 @@ void draw_rows(struct abuf *ab) {
 	}
 }
 
-void draw_status_bar(struct abuf *ab) {
+void
+draw_status_bar(struct abuf *ab)
+{
 	ab_append(ab, "\x1b[7m", 4);
 
 	char status[80], rstatus[80];
@@ -588,14 +642,18 @@ void draw_status_bar(struct abuf *ab) {
 	ab_append(ab, "\x1b[m\r\n", 5);
 }
 
-void draw_message_bar(struct abuf *ab) {
+void
+draw_message_bar(struct abuf *ab)
+{
 	ab_append(ab, "\x1b[K", 3);
 	int msglen = strlen(S.statusmsg);
 	if (msglen > S.cols) msglen = S.cols;
 	if (msglen && time(NULL) - S.statusmsg_time < 5) ab_append(ab, S.statusmsg, msglen);
 }
 
-void refresh_screen() {
+void
+refresh_screen()
+{
 	scroll();
 
 	struct abuf ab = ABUF_INIT;
@@ -618,7 +676,9 @@ void refresh_screen() {
 	ab_free(&ab);
 }
 
-void set_status_message(const char *fmt, ...) {
+void
+set_status_message(const char *fmt, ...)
+{
 	va_list ap;
 	va_start(ap, fmt);
 	vsnprintf(S.statusmsg, sizeof(S.statusmsg), fmt, ap);
@@ -628,7 +688,9 @@ void set_status_message(const char *fmt, ...) {
 
 /** init **/
 
-void init() {
+void
+init()
+{
 	enable_raw_mode();
 
 	S.cx = 0;
@@ -647,7 +709,9 @@ void init() {
 	S.rows -= 2;
 }
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[])
+{
 	init();
 
 	if (argc >= 2) {
