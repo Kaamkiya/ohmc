@@ -1,3 +1,4 @@
+/ohmc
 *.d
 *.o
 *.ko
@@ -41,7 +42,7 @@ dkms.conf
 .DS_Store
 .AppleDouble
 .LSOverride
-Icon
+Icon
 ._*
 .DocumentRevisions-V100
 .fseventsd
