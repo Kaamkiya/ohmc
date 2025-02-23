@@ -67,6 +67,8 @@ struct state S;
 /** prototypes **/
 
 void set_status_message(const char *fmt, ...);
+void refresh_screen();
+char *editor_prompt(char *prompt);
 
 /** terminal **/
 
@@ -395,7 +397,13 @@ editor_open(char *filename)
 void
 save()
 {
-	if (S.filename == NULL) return;
+	if (S.filename == NULL) {
+		S.filename = editor_prompt("Save as: %s (ESC to cancel)");
+		if (S.filename == NULL) {
+			set_status_message("Aborted save");
+			return;
+		}
+	}
 
 	int len;
 	char *buf = rows_to_string(&len);
@@ -447,6 +455,41 @@ ab_free(struct abuf *ab)
 }
 
 /** input **/
+char
+*editor_prompt(char *prompt)
+{
+	size_t bufsize = 128;
+	char *buf = malloc(bufsize);
+
+	size_t buflen = 0;
+	buf[0] = '\0';
+
+	while (1) {
+		set_status_message(prompt, buf);
+		refresh_screen();
+
+		int c = read_key();
+		if (c == DEL_KEY || c == BACKSPACE || c == CTRL_KEY('h')) {
+			if (buflen != 0) buf[--buflen] = '\0';
+		} else if (c == '\x1b') {
+			set_status_message("");
+			free(buf);
+			return NULL;
+		} else if (c == '\r') {
+			if (buflen != 0) {
+				set_status_message("");
+				return buf;
+			}
+		} else if (!iscntrl(c) && c < 128) {
+			if (buflen == bufsize - 1) {
+				bufsize *= 2;
+				buf = realloc(buf, bufsize);
+			}
+			buf[buflen++] = c;
+			buf[buflen] = '\0';
+		}
+	}
+}
 
 void
 move_cursor(int key)
